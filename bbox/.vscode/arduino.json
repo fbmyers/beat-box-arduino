@@ -1,0 +1,5 @@
+{
+    "port": "/dev/cu.usbmodemMID1",
+    "board": "arduino:sam:arduino_due_x",
+    "sketch": "bbox.ino"
+}
