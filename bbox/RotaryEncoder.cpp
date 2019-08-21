@@ -39,8 +39,8 @@ RotaryEncoder::RotaryEncoder(int pin1, int pin2) {
   _pin2 = pin2;
   
   // Setup the input pins and turn on pullup resistor
-  pinMode(pin1, INPUT_PULLUP);
-  pinMode(pin2, INPUT_PULLUP);
+  //pinMode(pin1, INPUT_PULLUP);
+  //pinMode(pin2, INPUT_PULLUP);
 
   // when not started in motion, the current state of the encoder should be 3
   _oldState = 3;

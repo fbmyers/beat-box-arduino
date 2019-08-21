@@ -8,6 +8,7 @@
 #define DEFAULT_TEMPO 40
 
 #define NUM_FX 6
+#define FX_PAR_STEP_SIZE 3
 
 const int MIDI_LOOPER_REC[] = {10,11,12,13};
 const int MIDI_LOOPER_PLAY[] = {20,21,22,23};
@@ -18,44 +19,35 @@ const int MIDI_LOOPER_REV[] = {60,61,62,63};
 
 
 struct looper_state {
-    bool enabled;
-    bool reverse;
-    looper_mode mode;
-    int total_beats;
-    int current_beat;
-    int fx_selector;
-    int fx_parameter;
+    bool enabled = false;
+    bool reverse = false;
+    looper_mode mode = STOPPED;
+    int total_beats = 0;
+    int current_beat = 0;
+    int fx_selector = 0;
+    int fx_parameter = 64;
 } looper[4];
 
 bool playing;
 bool metronome_enabled;
 int tempo;
-int midi_time;
+
 
 void setup_ableton() {
 
     //TODO: turn OFF transport, reset all loopers, then restart
     setMetronome(true);
-    delay(10);
     setTempo(DEFAULT_TEMPO);
-    delay(10);
 
     for (int i=0;i<4;i++) {
         setLooperMode(i,PLAYING);
-        delay(10);
         setLooperEnabled(i,false);
-        delay(10);
         setLooperFXParameter(i,64);
-        delay(10);
         setLooperFXSelector(i,0);
-        delay(10);
         setLooperReverse(i,false);
-        delay(10);
     }
 
     setStartStop(true);
-    delay(10);
-
 }
   
 void setStartStop(bool start) {
@@ -114,10 +106,10 @@ void  setLooperFXSelector(int num, int fx_sel) {
 }
 
 void  setLooperFXParameter(int num, int fx_par) {
-    if (fx_par > 127)
-        fx_par = 127;
+    if (fx_par > (127/FX_PAR_STEP_SIZE))
+        fx_par = (127/FX_PAR_STEP_SIZE);
     else if (fx_par < 0)
         fx_par = 0;
-    controlChange(0,MIDI_LOOPER_FX_PAR[num],fx_par);
+    controlChange(0,MIDI_LOOPER_FX_PAR[num],fx_par*FX_PAR_STEP_SIZE);
     looper[num].fx_parameter = fx_par;  
 }

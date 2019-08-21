@@ -26,7 +26,8 @@ void noteOff(byte channel, byte pitch, byte velocity) {
 void controlChange(byte channel, byte control, byte value) {
   midiEventPacket_t event = {0x0B, 0xB0 | channel, control, value};
   MidiUSB.sendMIDI(event);
-  MidiUSB.flush();  
+  MidiUSB.flush();
+  delay(10);  
 }
 
 midiEventPacket_t read_midi() {
@@ -35,9 +36,10 @@ midiEventPacket_t read_midi() {
   do {
     rx = MidiUSB.read();
     if (rx.header != 0) {
-        
+
       // TODO: only allow one looper to record at a time
       if (rx.byte1 == 0x90) { //hote off
+        /* 
         if ((rx.byte2 >= 1) && (rx.byte2 <= 4)) { //looper beat state
           int n = rx.byte2 - 1;
           looper[n].current_beat = rx.byte3;
@@ -47,6 +49,7 @@ midiEventPacket_t read_midi() {
           //since looper state only comes on the beat, assume this is also the start of a new beat
           midi_time = 0;
         }
+        */
 
         if ((rx.byte2 >= 41) && (rx.byte2 <= 44)) { //looper rec/play state
           int n = rx.byte2 - 41;
@@ -55,15 +58,19 @@ midiEventPacket_t read_midi() {
               break;
             case 2: // record
               looper[n].mode = RECORDING;
+              looper[n].total_beats = 0;
+              looper[n].current_beat = 0;
               break;
             case 3: // playback
               looper[n].mode = PLAYING;
-              looper[n].total_beats = 0; //need this info from ableton
+              looper[n].current_beat = 0;
               break;
           }
-          //since looper state only comes on the beat, assume this is also the start of a new beat
-          midi_time = 0;
+
         }
+
+        //since looper state only comes on the beat, assume this is also the start of a new beat
+        midi_time = 0;
       }
 
       if (rx.byte1 == 0xF8) {
@@ -71,6 +78,18 @@ midiEventPacket_t read_midi() {
         Serial.print("-");
       }
 
+      if (midi_time==1) { //since I get so many messages at each beat, wait for the first tick
+        for (int i=0;i<4;i++)
+            if (looper[i].mode == RECORDING)
+                looper[i].total_beats++;
+            else if (looper[i].mode == PLAYING) {
+                looper[i].current_beat++;
+                if (looper[i].current_beat > looper[i].total_beats)
+                    looper[i].current_beat = 1;
+            }
+      }
+
+      
       if (midi_time==1) {
         Serial.print(" LOOP1 ");
         if (looper[0].mode == RECORDING)
