@@ -1,14 +1,10 @@
 #include "pin_mapping.h"
-
-#define MIDI_TRANSPORT_PLAY 1
-#define MIDI_TRANSPORT_STOP 2
-#define MIDI_TRANSPORT_METRONOME 3
-#define MIDI_TRANSPORT_TEMPO 5
+#include "midi_mapping.h"
 
 #define DEFAULT_TEMPO 40
 
 #define NUM_FX 6
-#define FX_PAR_STEP_SIZE 3
+#define FX_PAR_STEP_SIZE 6
 
 const int MIDI_LOOPER_REC[] = {10,11,12,13};
 const int MIDI_LOOPER_PLAY[] = {20,21,22,23};
@@ -16,6 +12,7 @@ const int MIDI_LOOPER_EN[] = {30,31,32,33};
 const int MIDI_LOOPER_FX_SEL[] = {40,41,42,43};
 const int MIDI_LOOPER_FX_PAR[] = {50,51,52,53};
 const int MIDI_LOOPER_REV[] = {60,61,62,63};
+
 
 
 struct looper_state {
@@ -30,7 +27,7 @@ struct looper_state {
 
 bool playing;
 bool metronome_enabled;
-int tempo;
+int tempo = DEFAULT_TEMPO;
 
 
 void setup_ableton() {

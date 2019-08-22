@@ -38,7 +38,7 @@ midiEventPacket_t read_midi() {
     if (rx.header != 0) {
 
       // TODO: only allow one looper to record at a time
-      if (rx.byte1 == 0x90) { //hote off
+      if (rx.byte1 == 0x90) { //hote on
         /* 
         if ((rx.byte2 >= 1) && (rx.byte2 <= 4)) { //looper beat state
           int n = rx.byte2 - 1;
@@ -50,8 +50,23 @@ midiEventPacket_t read_midi() {
           midi_time = 0;
         }
         */
-
-        if ((rx.byte2 >= 41) && (rx.byte2 <= 44)) { //looper rec/play state
+        if (rx.byte2 == 0x6C) {
+          current_beat = 0; //downbeat
+          current_tick = 0;
+        }
+        else if (rx.byte2 == 0x6D) { 
+          current_beat = 1; //beat 2
+          current_tick = 0;
+        }
+        else if (rx.byte2 == 0x6E) { 
+          current_beat = 2; //beat 3
+          current_tick = 0;
+        }
+        else if (rx.byte2 == 0x6F) { 
+          current_beat = 3; //beat 4
+          current_tick = 0;
+        }
+        else if ((rx.byte2 >= 41) && (rx.byte2 <= 44)) { //looper rec/play state
           int n = rx.byte2 - 41;
           switch (rx.byte3) {
             case 1:
@@ -69,16 +84,14 @@ midiEventPacket_t read_midi() {
 
         }
 
-        //since looper state only comes on the beat, assume this is also the start of a new beat
-        midi_time = 0;
       }
 
       if (rx.byte1 == 0xF8) {
-        midi_time++;
+        current_tick++;
         Serial.print("-");
       }
 
-      if (midi_time==1) { //since I get so many messages at each beat, wait for the first tick
+      if (current_tick==1) { //since I get so many messages at each beat, wait for the first tick
         for (int i=0;i<4;i++)
             if (looper[i].mode == RECORDING)
                 looper[i].total_beats++;
@@ -90,7 +103,7 @@ midiEventPacket_t read_midi() {
       }
 
       
-      if (midi_time==1) {
+      if (current_tick==1) {
         Serial.print(" LOOP1 ");
         if (looper[0].mode == RECORDING)
           Serial.print("REC ");
@@ -105,7 +118,7 @@ midiEventPacket_t read_midi() {
             Serial.println(" OFF");
       }
 
-/*
+      /*
       Serial.print("Received: ");
       Serial.print(rx.byte1, HEX);
       Serial.print("-");

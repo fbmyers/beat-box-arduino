@@ -1,6 +1,8 @@
 #include <Adafruit_NeoPixel.h>
 #include "pin_mapping.h"
 
+#define TEST_LEDS false
+
 //#define NUM_LEDS 8
 #define SM_RING_SIZE 12
 #define LG_RING_SIZE 24
@@ -34,7 +36,8 @@ int led_max = 120;
 
 void setup_leds() {
   console_pixels.begin();
-  test_leds();
+  if (TEST_LEDS)
+    test_leds();
 }
 
 void test_leds() {
@@ -101,57 +104,132 @@ void test_leds() {
 }
 
 void setBargraph(int n) {
-  if (looper[n].mode == PLAYING) {
+  if ((looper[n].mode == PLAYING) && looper[n].enabled) {
     int progress = ceil(((float)looper[n].current_beat / looper[n].total_beats) * BAR_LENGTH);
+    uint16_t hues[] = {0,10000,22000,44000};
 
     for (int i=0;i<BAR_LENGTH;i++) {
-      if (i < progress)
-        console_pixels.setPixelColor(NEO_BARS[n]+i,console_pixels.Color(150,0,0));
-      else
-        console_pixels.setPixelColor(NEO_BARS[n]+i,console_pixels.Color(5,0,0));
+      if (looper[n].reverse==false) {
+        if (i < progress)
+          console_pixels.setPixelColor(NEO_BARS[n]+i,console_pixels.ColorHSV(hues[n],255,30));
+        else
+          console_pixels.setPixelColor(NEO_BARS[n]+i,console_pixels.ColorHSV(hues[n],255,1));
+      }
+      else {
+        if (i > (BAR_SIZE-progress))
+          console_pixels.setPixelColor(NEO_BARS[n]+i,console_pixels.ColorHSV(hues[n],255,30));
+        else
+          console_pixels.setPixelColor(NEO_BARS[n]+i,console_pixels.ColorHSV(hues[n],255,1));        
+      }
     }
   }
   else if (looper[n].mode == RECORDING) {
     for (int i=0;i<BAR_LENGTH;i++)
-      console_pixels.setPixelColor(NEO_BARS[n]+i,console_pixels.Color(255,0,0));
+      console_pixels.setPixelColor(NEO_BARS[n]+i,console_pixels.ColorHSV(1000,255,255));
   }
 }
 
 void setFXRing(int n) {
-    int pos = ((float)looper[n].fx_parameter / 127) * SM_RING_SIZE;
+  if (((looper[n].mode == PLAYING) && !looper[n].enabled) || (looper[n].mode == STOPPED))
+    return;
 
-    for (int i=0;i<SM_RING_SIZE;i++) {
-      if (i == pos)
-        console_pixels.setPixelColor(NEO_FX_PAR[n]+i,console_pixels.Color(0,150,0));
-      else
-        console_pixels.setPixelColor(NEO_FX_PAR[n]+i,console_pixels.Color(0,5,0));
-    }
+  uint16_t hues[] = {59000,43000,18000,31500,7000};
+
+  int selection = looper[n].fx_selector;
+  if (selection==0)
+    return;
+
+  int pos = looper[n].fx_parameter % SM_RING_SIZE;
+
+  for (int i=0;i<SM_RING_SIZE;i++) {
+    if (i == pos)
+      console_pixels.setPixelColor(NEO_FX_PAR[n]+i,console_pixels.ColorHSV(hues[selection-1],100,100));
+    else
+      console_pixels.setPixelColor(NEO_FX_PAR[n]+i,console_pixels.ColorHSV(hues[selection-1],200,10));
+  }
+
 }
 
 //TODO: combine ring and selector into 1 fxn
 void setFXSelLED(int n) {
+  if (((looper[n].mode == PLAYING) && !looper[n].enabled) || (looper[n].mode == STOPPED))
+    return;
+
+  uint16_t hues[] = {59000,43000,18000,31500,7000};
+  uint8_t val = 50*sin(2*PI*millis()/500) + 150;
+
   int selection = looper[n].fx_selector;
   if (selection==0)
     return;
   else
-    console_pixels.setPixelColor(NEO_FX_SEL[n]+selection-1,console_pixels.Color(0,0,255));
+    console_pixels.setPixelColor(NEO_FX_SEL[n]+selection-1,console_pixels.ColorHSV(hues[selection-1],150,val));
 }
 
-void setTempoLED(float pulse) {
-  int val = (int)pulse;
+void setTempoLED() {
+  float pulse = (1.0-current_tick/24.0)*0.7 + 0.3; //goes from 100% to 30%
+
+  uint32_t col;
+  if (current_beat==0)
+    col = console_pixels.ColorHSV(11000,100,70*pulse);
+  else
+    col = console_pixels.ColorHSV(11000,200,50*pulse);
+  
   for (int i=0;i<LG_RING_SIZE;i++)
-    console_pixels.setPixelColor(NEO_TEMPO_RING+i,console_pixels.Color(val,val,val));  
+    console_pixels.setPixelColor(NEO_TEMPO_RING+i,col);  
+
+  if (tempo<70)
+    console_pixels.setPixelColor(NEO_TEMPO_RING+current_tick-1,console_pixels.ColorHSV(11000,100,100));
+
 }
 
-void setBeetTV(float pulse) {
-  int val = (int)pulse/2;
-  for (int i=0;i<BEET_BODY_SIZE;i++)
-    console_pixels.setPixelColor(NEO_BEET_BODY+i,console_pixels.Color(val,0,val)); 
+void setBeetTV() {
+  static int last_tick = 0;
+
+  float pulse = (1.0-current_tick/24.0)*0.7 + 0.3; 
+
+  //float pulse = (1.0-current_tick/24.0)*(led_max-led_min)+led_min;
+
+  //int val = (int)pulse/2;
+
+  for (int i=0;i<BEET_BODY_SIZE;i++) {
+
+    //set them all to white at downbeat
+    if (current_beat==0) {
+      console_pixels.setPixelColor(NEO_BEET_BODY+i,console_pixels.ColorHSV(64000,100,70*pulse)); 
+    }
+    else {
+      console_pixels.setPixelColor(NEO_BEET_BODY+i,console_pixels.ColorHSV(64000,230,70*pulse)); 
+    }
+
+  }
+
   for (int i=0;i<BEET_LEAF_SIZE;i++) {
-    console_pixels.setPixelColor(NEO_BEET_LEAVES[0]+i,console_pixels.Color(0,val,0)); 
-    console_pixels.setPixelColor(NEO_BEET_LEAVES[1]+i,console_pixels.Color(0,val,0)); 
+    if (i<current_tick/3) {
+      console_pixels.setPixelColor(NEO_BEET_LEAVES[0]+i,console_pixels.Color(0,100,0)); 
+      console_pixels.setPixelColor(NEO_BEET_LEAVES[1]+i,console_pixels.Color(0,100,0)); 
+    }
+    else {
+      console_pixels.setPixelColor(NEO_BEET_LEAVES[0]+i,console_pixels.Color(0,30,0)); 
+      console_pixels.setPixelColor(NEO_BEET_LEAVES[1]+i,console_pixels.Color(0,30,0));      
+    }
   }
      
+}
+
+void setButtons(int n) {
+
+    if (looper[n].mode == RECORDING) {
+      analogWrite(PIN_REC_LED[n],255);
+      analogWrite(PIN_EN_LED[n],0);     
+    }
+    else if ((looper[n].mode) == PLAYING && looper[n].enabled) {
+      analogWrite(PIN_REC_LED[n],255);
+      analogWrite(PIN_EN_LED[n],255);
+    }
+    else {
+      analogWrite(PIN_REC_LED[n],10);
+      analogWrite(PIN_EN_LED[n],3);
+    }
 }
 
 // Update internal LED state variables based on tempo, state, and LED effects
@@ -159,34 +237,17 @@ void setBeetTV(float pulse) {
 void process_leds() {
   console_pixels.clear();
 
-  float pulse = (1.0-midi_time/24.0)*(led_max-led_min)+led_min;
-
-  setTempoLED(pulse);
-  setBeetTV(pulse);
+  setTempoLED();
+  setBeetTV();
 
   //looper lights
   for (int i=0;i<4;i++) {
-    if (looper[i].mode == RECORDING) {
-      analogWrite(PIN_REC_LED[i],255);
-    }
-    else if (looper[i].mode == PLAYING) {
-      analogWrite(PIN_REC_LED[i],(int)pulse);
-    }
-    else {
-      analogWrite(PIN_REC_LED[i],0);
-    }
-
-    if (looper[i].enabled) {
-      analogWrite(PIN_EN_LED[i],255);
-      setBargraph(i);
-      setFXRing(i);
-      setFXSelLED(i);
-    }
-    else
-      analogWrite(PIN_EN_LED[i],0);
+    setButtons(i);
+    setBargraph(i);
+    setFXRing(i);
+    setFXSelLED(i);
   }
   
-  //pixels.setPixelColor(enc_track1_fx_sel.getPosition(),pixels.Color(150,0,0));
   console_pixels.show();
 
 }

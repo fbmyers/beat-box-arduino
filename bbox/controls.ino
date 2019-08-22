@@ -168,13 +168,12 @@ void process_controls() {
     }
     if (btn_track1_fx_sel.tick()) {
         if (btn_track1_fx_sel.getState())
-            {}
+            setLooperFXSelector(0,0);
         Serial.print("TRACK1 SELBTN ");
         Serial.println(btn_track1_fx_sel.getState());
     }
     if (btn_track1_fx_par.tick()) {
-        if (btn_track1_fx_par.getState())
-            {}
+        setLooperReverse(0,btn_track1_fx_par.getState());
         Serial.print("TRACK1 PARBTN ");
         Serial.println(btn_track1_fx_par.getState());
     }
@@ -193,13 +192,12 @@ void process_controls() {
     }
     if (btn_track2_fx_sel.tick()) {
         if (btn_track2_fx_sel.getState())
-            {}
+            setLooperFXSelector(1,0);
         Serial.print("TRACK2 SELBTN ");
         Serial.println(btn_track2_fx_sel.getState());
     }
     if (btn_track2_fx_par.tick()) {
-        if (btn_track2_fx_par.getState())
-            {}
+        setLooperReverse(1,btn_track2_fx_par.getState());
         Serial.print("TRACK2 PARBTN ");
         Serial.println(btn_track2_fx_par.getState());
     }
@@ -218,13 +216,12 @@ void process_controls() {
     }
     if (btn_track3_fx_sel.tick()) {
         if (btn_track3_fx_sel.getState())
-            {}
+            setLooperFXSelector(2,0);
         Serial.print("TRACK3 SELBTN ");
         Serial.println(btn_track3_fx_sel.getState());
     }
     if (btn_track3_fx_par.tick()) {
-        if (btn_track3_fx_par.getState())
-            {}
+        setLooperReverse(2,btn_track3_fx_par.getState());
         Serial.print("TRACK3 PARBTN ");
         Serial.println(btn_track3_fx_par.getState());
     }  
@@ -243,13 +240,12 @@ void process_controls() {
     }
     if (btn_track4_fx_sel.tick()) {
         if (btn_track4_fx_sel.getState())
-            {}
+            setLooperFXSelector(3,0);
         Serial.print("TRACK4 SELBTN ");
         Serial.println(btn_track4_fx_sel.getState());
     }
     if (btn_track4_fx_par.tick()) {
-        if (btn_track4_fx_par.getState())
-            {}
+        setLooperReverse(3,btn_track4_fx_par.getState());
         Serial.print("TRACK4 PARBTN ");
         Serial.println(btn_track4_fx_par.getState());
     }  
@@ -262,8 +258,11 @@ void process_controls() {
         Serial.println(enc_tempo.getPosition());
     }
     if (btn_tempo.tick()) {
-        if (btn_tempo.getState())
-            {}
+        setLooperReverse(0,btn_tempo.getState());
+        setLooperReverse(1,btn_tempo.getState());
+        setLooperReverse(2,btn_tempo.getState());
+        setLooperReverse(3,btn_tempo.getState());
+
         Serial.print("TEMPO BTN ");
         Serial.println(btn_tempo.getState());
     }      
